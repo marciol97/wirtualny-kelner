@@ -1,0 +1,78 @@
+/* src/components/Menu.css */
+.menu-container {
+    padding: 1rem;
+}
+
+.menu-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 1.5rem;
+    color: #1f2937;
+}
+
+/* Używamy CSS Grid do ułożenia kart dań */
+.menu-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 1fr; /* Na telefonach 1 kolumna */
+}
+
+/* Media query - od 1280px szerokości robimy 2 kolumny */
+@media (min-width: 1280px) {
+    .menu-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.product-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    background-color: white;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    transition: box-shadow 0.2s;
+}
+
+.product-card:hover {
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.product-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.5rem;
+}
+
+.product-name {
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.product-price {
+    font-size: 1.125rem;
+    font-weight: bold;
+    color: #2563eb; /* Niebieski kolor dla akcentu */
+}
+
+.product-description {
+    color: #4b5563;
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+}
+
+.btn-add {
+    width: 100%;
+    background-color: #3b82f6;
+    color: white;
+    padding: 0.5rem;
+    border: none;
+    border-radius: 0.25rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-add:hover {
+    background-color: #2563eb;
+}
