@@ -1,6 +1,6 @@
 import React, {useState, useEffect} from "react";
 import './Manager.css';
-import {collection, addDoc, deleteDoc, doc, onSnapshot} from "firebase/firestore";
+import {collection, addDoc, deleteDoc, doc, onSnapshot, updateDoc} from "firebase/firestore";
 import {ref, uploadBytes, getDownloadURL} from "firebase/storage";
 import {db, storage} from "../firebase.js";
 
@@ -12,6 +12,8 @@ export default function Manager() {
     const [description, setDescription] = useState('');
     const [imageFile, setImageFile] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [editingId, setEditingId] = useState(null);
+    const [existingImageUrl, setExistingImageUrl] = useState('');
 
     // pobieranie menu z bazy
     useEffect(() => {
@@ -25,7 +27,7 @@ export default function Manager() {
     }, []);
 
     //dodanie nowego dania
-    const handleAddProduct = async (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (!name || !price) return;
 
@@ -37,7 +39,7 @@ export default function Manager() {
 
         setIsSubmitting(true);
         try {
-            let finalImageUrl = "";
+            let finalImageUrl = existingImageUrl;
 
             if (imageFile) {
                 const uniqueFileName = `${Date.now()}-${imageFile.name}`;
@@ -47,25 +49,58 @@ export default function Manager() {
 
                 finalImageUrl = await getDownloadURL(storageRef);
             }
-            await addDoc(collection(db, 'menu'), {
-                name: name,
-                price: parsedPrice,
-                description: description,
-                imageUrl: finalImageUrl,
-                available: true
-            });
-            setName('');
-            setPrice('');
-            setDescription('');
-            setImageFile(null);
+
+            if (editingId) {
+                const itemRef = doc(db, 'menu', editingId);
+                await updateDoc(itemRef, {
+                    name: name,
+                    price: parsedPrice,
+                    description: description,
+                    imageUrl: finalImageUrl
+                });
+            } else {
+                await addDoc(collection(db, 'menu'), {
+                    name: name,
+                    price: parsedPrice,
+                    description: description,
+                    imageUrl: finalImageUrl,
+                    available: true
+                });
+            }
+            resetForm();
 
             document.getElementById('file-upload').value = '';
         } catch (error) {
-            console.error("Błąd dodawania:", error);
-            alert("Nie udało się dodać produktu.");
+            console.error("Błąd zapisu:", error);
+            alert("Wystąpił błąd podczas zapisywania.");
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const handleEditClick = (item) => {
+        setEditingId(item.id);
+        setName(item.name);
+        setPrice(item.price);
+        setDescription(item.description || '');
+        setExistingImageUrl(item.imageUrl || '');
+        setImageFile(null);
+
+        const fileInput = document.getElementById('file-upload');
+        if(fileInput) fileInput.value = '';
+
+        window.scrollTo({top: 0, behavior: 'smooth'});
+    };
+
+    const resetForm = () => {
+        setEditingId(null);
+        setName('');
+        setPrice('');
+        setDescription('');
+        setExistingImageUrl('');
+        setImageFile(null);
+        const fileInput = document.getElementById('file-upload');
+        if (fileInput) fileInput.value = '';
     };
 
     // usuwanie dania
@@ -73,6 +108,7 @@ export default function Manager() {
         if (window.confirm("Czy na pewno chcesz usunąć tę pozycje z menu?")) {
             try {
                 await deleteDoc(doc(db, 'menu', id));
+                if (editingId === id) resetForm();
             } catch (error) {
                 console.error("Błąd usuwania:", error);
             }
@@ -86,8 +122,8 @@ export default function Manager() {
             <div className="manager-layout">
                 {/* Lewa kolumna dodawania */}
                 <div className="manager-form-section">
-                    <form className="manager-form" onSubmit={handleAddProduct}>
-                        <h3>Dodaj nowe danie</h3>
+                    <form className="manager-form" onSubmit={handleSubmit}>
+                        <h3>{editingId ? 'Edytuj pozycję' : 'Dodaj danie'}</h3>
 
                         <div className="form-group">
                             <label className="form-label">Nazwa dania</label>
@@ -124,6 +160,11 @@ export default function Manager() {
 
                         <div className="form-group">
                             <label className="form-label">Wgraj zdjęcie (opcjonalnie)</label>
+                            {editingId && existingImageUrl && (
+                                <p style={{fontSize: '0.85rem', color: '#10b981', marginBottom: '0.5rem'}}>
+                                    Ta pozycja ma już przypisane zdjęcie. Wgraj plik tylko, jeśli chcesz je zmienić.
+                                </p>
+                            )}
                             <input
                                 id="file-upload"
                                 type="file"
@@ -133,9 +174,17 @@ export default function Manager() {
                             />
                         </div>
 
-                        <button type="submit" className="btn-submit" disabled={isSubmitting}>
-                            {isSubmitting ? 'Dodawanie...' : 'Dodaj do Menu'}
-                        </button>
+                        <div className="form-actions">
+                            <button type="submit" className="btn-submit" disabled={isSubmitting}>
+                                {isSubmitting ? 'Przetwarzanie...' : (editingId ? 'Zapisz zmiany' : 'Dodaj do Menu')}
+                            </button>
+
+                            {editingId && (
+                                <button type="button" className="btn-cancel" onClick={resetForm} disabled={isSubmitting}>
+                                    Anuluj edycję
+                                </button>
+                            )}
+                        </div>
                     </form>
                 </div>
 
@@ -147,7 +196,7 @@ export default function Manager() {
                             <div key={item.id} className="manager-item">
                                 <div style={{display: 'flex', gap: '1rem', alignItems: 'center'}}>
                                     {item.imageUrl && item.imageUrl.trim() !== "" && (
-                                        <img src={item.imageUrl} alt="" style={{widt: '50px', height: '50px', borderRadius: '4px', objectFit: 'cover'}} />
+                                        <img src={item.imageUrl} alt="" style={{width: '50px', height: '50px', borderRadius: '4px', objectFit: 'cover'}} />
                                     )}
                                     <div className="manager-item-info">
                                         <h4>{item.name}</h4>
@@ -155,11 +204,18 @@ export default function Manager() {
                                         <strong style={{color: '#2563eb'}}>{item.price.toFixed(2)} zł</strong>
                                     </div>
                                 </div>
-                                <button
-                                    className="btn-delete"
-                                    onClick={() => handleDelete(item.id)}>
-                                    Usuń
-                                </button>
+                                <div className="manager-item-actions">
+                                    <button
+                                        className="btn-edit"
+                                        onClick={() => handleEditClick(item)}>
+                                        Edytuj
+                                    </button>
+                                    <button
+                                        className="btn-delete"
+                                        onClick={() => handleDelete(item.id)}>
+                                        Usuń
+                                    </button>
+                                </div>
                             </div>
                         ))}
                     </div>
