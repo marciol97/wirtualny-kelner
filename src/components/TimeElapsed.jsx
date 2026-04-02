@@ -34,14 +34,18 @@ export default function TimeElapsed({createdAt }) {
     }, [createdAt]);
 
     return (
-        <span style={{
-            fontFamily: 'monospace',
-            fontSize: '1.2rem',
-            fontWeight: 'bold',
-            color: isLate ? '#dc2626' : '#4b5563',
-            animation: isLate ? 'pulse 2s infinite' : 'none'
-        }}>
+        <>
+            {isLate && <div className="late-bg-overlay"></div>}
+
+            <span style={{
+                fontFamily: 'monospace',
+                fontSize: '1.2rem',
+                fontWeight: 'bold',
+                color: isLate ? '#dc2626' : '#4b5563',
+                animation: isLate ? 'pulse 2s infinite' : 'none'
+            }}>
             {timeString}
         </span>
+        </>
     );
 }

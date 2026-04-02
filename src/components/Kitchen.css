@@ -21,6 +21,7 @@
 
 /* Pojedynczy Bon */
 .ticket {
+    position: relative;
     background: white;
     border-radius: 0.5rem;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
@@ -108,9 +109,17 @@
 .btn-start { background-color: #f59e0b; }
 .btn-finish { background-color: #10b981; }
 
+.late-bg-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    animation: pulse-danger 2s infinite;
+    z-index: 10;
+}
+
 /* pulsowanie bonu po czasie 15min*/
-@keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.5; }
-    100% { opacity: 1; }
+@keyframes pulse-danger {
+    0% { background-color: transparent; }
+    50% { background-color: rgba(239, 68, 68, 0.2); }
+    100% { background-color: transparent; }
 }

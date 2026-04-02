@@ -1,5 +1,6 @@
 import Menu from './components/Menu.jsx';
 import Kitchen from "./components/Kitchen.jsx";
+import Manager from "./components/Manager.jsx";
 import { useState} from "react";
 import './App.css';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -89,12 +90,16 @@ function App() {
                         onClick={() => setCurrentView('kitchen')}>
                     Panel kuchni
                 </button>
+                <button className={`nav-btn ${currentView === 'manager' ? 'active' : ''}`}
+                        onClick={() => setCurrentView('manager')}>
+                    Menadżer
+                </button>
             </nav>
 
             {currentView === 'client' ? (
                 <>
                     <header className="header">
-                        <h1>Wirtualny Kelner 🍽️</h1>
+                        <h1>Wirtualny Kelner</h1>
                     </header>
 
                     <main className="main-layout">
@@ -154,8 +159,10 @@ function App() {
                         </section>
                     </main>
                 </>
-            ) : (
+            ) :  currentView === 'kitchen' ? (
                 <Kitchen />
+            ) : (
+                <Manager />
             )}
 
         </div>
