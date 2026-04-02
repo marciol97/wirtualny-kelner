@@ -32,7 +32,12 @@ export default function Menu({ onAdd }) {
                 <div className="menu-grid">
                     {products.map((product) => (
                         <div key={product.id} className="product-card">
-                            <div className="product-header">
+                            {product.imageUrl && product.imageUrl.trim() !== "" && (
+                                <div className="product-image-container">
+                                    <img src={product.imageUrl} alt={product.name} className="product-image" />
+                                </div>
+                            )}
+                            <div className="product-header" style={{marginTop: product.imageUrl ? '1rem' : '0'}}>
                                 <h3 className="product-name">{product.name}</h3>
                                 <span className="product-price">{product.price.toFixed(2)} zł</span>
                             </div>
