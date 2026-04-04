@@ -52,11 +52,15 @@ export default function Kitchen() {
 
                     return (
                         <div key={order.id} className={`ticket ${order.status}`}>
-                            <div className="ticket-header">
+                            <div className="ticket-header" >
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem'}}>
+
                                     <span className="table-number">Stolik {order.tableNumber}</span>
                                     <TimeElapsed createdAt={order.createdAt}></TimeElapsed>
                                 </div>
+                                <span style={{ fontSize: '1.5rem', fontWeight: '600', color: '#111827', lineHeight: '1' }}>
+                                        #{order.dailyOrderNumber || '?'}
+                                </span>
                                 <span className={`status-badge ${order.status}`}>
                                     {order.status === 'pending' ? 'Nowe' : 'W trakcie'}
                                 </span>

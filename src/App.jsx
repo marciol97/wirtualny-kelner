@@ -4,7 +4,7 @@ import Manager from "./components/Manager.jsx";
 import Bar from "./components/Bar.jsx";
 import { useState} from "react";
 import './App.css';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { db } from './firebase';
 
 function App() {
@@ -50,8 +50,29 @@ function App() {
         setIsSubmitting(true); // włącza blokade przycisku
 
         try {
+            const now = new Date();
+            const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+            const q = query(
+                collection(db, 'orders'),
+                where('createdAt', '>=', startOfDay),
+                orderBy('createdAt', 'desc'),
+                limit(1)
+            );
+
+            let newDailyOrderNumber = 1;
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+                const lastOrder = querySnapshot.docs[0].data();
+                if (lastOrder.dailyOrderNumber) {
+                    newDailyOrderNumber = lastOrder.dailyOrderNumber + 1;
+                }
+            }
+
             const orderData = {
                 tableNumber: 5,
+                dailyOrderNumber: newDailyOrderNumber,
                 status: 'pending',
                 drinkCompleted: false,
                 totalAmount: totalAmount,

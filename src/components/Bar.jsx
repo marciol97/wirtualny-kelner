@@ -16,7 +16,7 @@ export default function Bar() {
             }));
 
             const activeOrders = ordersData.filter(order =>
-                order.status !== 'completed' && order.drinksCompleted !== true
+                order.drinksCompleted !== true
             );
 
             setOrders(activeOrders);
@@ -34,18 +34,22 @@ export default function Bar() {
         }
     };
 
+    const barOrders = orders.filter(order => {
+        return order.items.some(item => item.category === 'Napoje');
+    });
+
     return (
         <div className="kitchen-container">
             <h2 className="kitchen-header">Panel Barowy</h2>
 
             <div className="orders-grid">
-                {orders.length === 0 && (
+                {barOrders.length === 0 && (
                     <p style={{textAlign: 'center', gridColumn: '1 / -1', color: '#6b7280'}}>
                         Brak napojów do wydania
                     </p>
                 )}
 
-                {orders.map(order => {
+                {barOrders.map(order => {
                     const drinkItems = order.items.filter(item => item.category === 'Napoje');
 
                     if (drinkItems.length === 0) return null;
@@ -57,6 +61,9 @@ export default function Bar() {
                                     <span className="table-number">Stolik {order.tableNumber}</span>
                                     <TimeElapsed createdAt={order.createdAt}/>
                                 </div>
+                                <span style={{ fontSize: '1.5rem', fontWeight: '600', color: '#111827', lineHeight: '1' }}>
+                                        #{order.dailyOrderNumber || '?'}
+                                </span>
                                 <span className="status-badge pending">
                                     Napoje
                                 </span>
