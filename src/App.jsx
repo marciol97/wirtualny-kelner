@@ -4,7 +4,7 @@ import Manager from "./components/Manager.jsx";
 import Bar from "./components/Bar.jsx";
 import { useState} from "react";
 import './App.css';
-import { collection, addDoc, serverTimestamp, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
+import { collection, serverTimestamp, doc, runTransaction} from 'firebase/firestore';
 import { db } from './firebase';
 
 function App() {
@@ -50,43 +50,39 @@ function App() {
         setIsSubmitting(true); // włącza blokade przycisku
 
         try {
-            const now = new Date();
-            const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const today = new Date();
+            const dateString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-            const q = query(
-                collection(db, 'orders'),
-                where('createdAt', '>=', startOfDay),
-                orderBy('createdAt', 'desc'),
-                limit(1)
-            );
+            const counterRef = doc(db, 'daily_counters', dateString);
+            const orderRef = doc(collection(db, 'orders'));
 
-            let newDailyOrderNumber = 1;
-            const querySnapshot = await getDocs(q);
+            await runTransaction(db, async (transaction) => {
+                const counterSnap = await transaction.get(counterRef);
 
-            if (!querySnapshot.empty) {
-                const lastOrder = querySnapshot.docs[0].data();
-                if (lastOrder.dailyOrderNumber) {
-                    newDailyOrderNumber = lastOrder.dailyOrderNumber + 1;
+                let nextNum = 1;
+                if (counterSnap.exists()) {
+                    nextNum = counterSnap.data().lastNumber + 1;
                 }
-            }
 
-            const orderData = {
-                tableNumber: 5,
-                dailyOrderNumber: newDailyOrderNumber,
-                status: 'pending',
-                drinkCompleted: false,
-                totalAmount: totalAmount,
-                createdAt: serverTimestamp(),
-                items: cart.map(item => ({
-                    productId: item.id,
-                    name: item.name,
-                    price: item.price,
-                    quantity: item.quantity,
-                    category:item.category || 'Dania Główne'
-                }))
-            };
+                transaction.set(counterRef, {lastNumber: nextNum}, {merge: true});
 
-            await addDoc(collection(db, 'orders'), orderData);
+                const orderData = {
+                    tableNumber: 5,
+                    dailyOrderNumber: nextNum,
+                    status: 'pending',
+                    drinkCompleted: false,
+                    totalAmount: totalAmount,
+                    createdAt: serverTimestamp(),
+                    items: cart.map(item => ({
+                        productId: item.id,
+                        name: item.name,
+                        price: item.price,
+                        quantity: item.quantity,
+                        category: item.category || 'Dania Główne'
+                    }))
+                };
+                transaction.set(orderRef, orderData);
+            });
 
             setCart([]);
             setOrderSuccess(true);
