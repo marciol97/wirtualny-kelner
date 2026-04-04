@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useMemo} from 'react';
 import './Menu.css';
 import {collection, onSnapshot} from "firebase/firestore";
 import {db} from "../firebase.js";
@@ -30,24 +30,27 @@ export default function Menu({ onAdd }) {
         return () => unsubscribe();
     }, []);
 
-    const categoryOrder = {
-        'Przystawki': 1,
-        'Dania Główne': 2,
-        'Napoje': 3,
-        'Desery': 4
-    };
+    const sortedProducts = useMemo(() => {
 
-    const availableProducts = products.filter(p => p.available !== false);
+        const categoryOrder = {
+            'Przystawki': 1,
+            'Dania Główne': 2,
+            'Napoje': 3,
+            'Desery': 4
+        };
 
-    const filteredProducts = activeCategory === 'Wszystkie' ? availableProducts : availableProducts.filter(p => (p.category || 'Dania Główne') === activeCategory);
+        const availableProducts = products.filter(p => p.available !== false);
 
-    //logika sortowania produktów
-    const sortedProducts = [...filteredProducts].sort((a, b) => {
-        const weightA = categoryOrder[a.category || 'Dania Główne'] || 99;
-        const weightB = categoryOrder[b.category || 'Dania Główne'] || 99;
+        const filteredProducts = activeCategory === 'Wszystkie' ? availableProducts : availableProducts.filter(p => (p.category || 'Dania Główne') === activeCategory);
 
-        return weightA - weightB;
-    })
+        //logika sortowania produktów
+        return [...filteredProducts].sort((a, b) => {
+            const weightA = categoryOrder[a.category || 'Dania Główne'] || 99;
+            const weightB = categoryOrder[b.category || 'Dania Główne'] || 99;
+
+            return weightA - weightB;
+        });
+    }, [products, activeCategory]);
 
     const renderProductCard = (product) => (
         <div key={product.id} className="product-card">
@@ -82,7 +85,7 @@ export default function Menu({ onAdd }) {
                             <IconComponent size={18} className="category-icon" />
                             <span>{cat.name}</span>
                         </button>
-                        );
+                    );
                 })}
             </div>
 

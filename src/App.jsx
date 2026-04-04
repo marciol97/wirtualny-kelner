@@ -1,6 +1,7 @@
 import Menu from './components/Menu.jsx';
 import Kitchen from "./components/Kitchen.jsx";
 import Manager from "./components/Manager.jsx";
+import Bar from "./components/Bar.jsx";
 import { useState} from "react";
 import './App.css';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -52,13 +53,15 @@ function App() {
             const orderData = {
                 tableNumber: 5,
                 status: 'pending',
+                drinkCompleted: false,
                 totalAmount: totalAmount,
                 createdAt: serverTimestamp(),
                 items: cart.map(item => ({
                     productId: item.id,
                     name: item.name,
                     price: item.price,
-                    quantity: item.quantity
+                    quantity: item.quantity,
+                    category:item.category || 'Dania Główne'
                 }))
             };
 
@@ -90,6 +93,10 @@ function App() {
                         onClick={() => setCurrentView('kitchen')}>
                     Panel kuchni
                 </button>
+                <button className={`nav-btn ${currentView === 'bar' ? 'active' : ''}`}
+                        onClick={() => setCurrentView('bar')}>
+                    Panel baru
+                </button>
                 <button className={`nav-btn ${currentView === 'manager' ? 'active' : ''}`}
                         onClick={() => setCurrentView('manager')}>
                     Menadżer
@@ -113,7 +120,7 @@ function App() {
 
                                 {orderSuccess && (
                                     <div style={{ backgroundColor: '#d1fae5', color: '#065f46', padding: '1rem', borderRadius: '0.5rem', marginBottom: '1rem', textAlign: 'center', fontWeight: 'bold' }}>
-                                        Zamówienie zostało wysłane na kuchnię! 🧑‍🍳
+                                        Zamówienie zostało wysłane na kuchnię!
                                     </div>
                                 )}
 
@@ -161,8 +168,10 @@ function App() {
                 </>
             ) :  currentView === 'kitchen' ? (
                 <Kitchen />
-            ) : (
+            ) : currentView === 'manager' ?(
                 <Manager />
+            ) : (
+                <Bar />
             )}
 
         </div>

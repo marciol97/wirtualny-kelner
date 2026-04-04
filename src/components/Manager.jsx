@@ -46,7 +46,10 @@ export default function Manager() {
                 const uniqueFileName = `${Date.now()}-${imageFile.name}`;
                 const storageRef = ref(storage, `menu-images/${uniqueFileName}`);
 
-                await uploadBytes(storageRef, imageFile);
+                const metadata = {
+                    cacheControl: 'public,max-age=31536000',
+                };
+                await uploadBytes(storageRef, imageFile, metadata);
 
                 finalImageUrl = await getDownloadURL(storageRef);
             }

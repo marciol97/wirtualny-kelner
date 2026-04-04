@@ -41,43 +41,49 @@ export default function Kitchen() {
                     </p>
                 )}
 
-                {orders.map(order => (
-                    <div key={order.id} className={`ticket ${order.status}`}>
-                        <div className="ticket-header">
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem'}}>
-                                <span className="table-number">Stolik {order.tableNumber}</span>
-                                <TimeElapsed createdAt={order.createdAt} />
-                            </div>
-                            <span className={`status-badge ${order.status}`}>
-                                {order.status === 'pending' ? 'Nowe' : 'W trkacie'}
-                            </span>
-                        </div>
+                {orders.map(order => {
+                    const kitchenItems = order.items.filter(item => item.category !== 'Napoje');
 
-                        <div className="ticket-body">
-                            {order.items.map((item, index) => (
-                                <div key={index} className="ticket-item">
-                                    <span className="item-qty">{item.quantity}x</span>
-                                    <span>{item.name}</span>
+                    if (kitchenItems.length === 0) return null;
+
+                    return (
+                        <div key={order.id} className={`ticket ${order.status}`}>
+                            <div className="ticket-header">
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem'}}>
+                                    <span className="table-number">Stolik {order.tableNumber}</span>
+                                    <TimeElapsed createdAt={order.createdAt}></TimeElapsed>
                                 </div>
-                                ))}
-                        </div>
+                                <span className={`status-badge ${order.status}`}>
+                                    {order.status === 'pending' ? 'Nowe' : 'W trakcie'}
+                                </span>
+                            </div>
 
-                        <div className="ticket-actions">
-                            {order.status === 'pending' && (
-                                <button className="btn-status btn-start"
-                                        onClick={() => updateOrderStatus(order.id, 'in_progress')}>
-                                    Zacznij przygotowywać
-                                </button>
+                            <div className="ticket-body">
+                                {kitchenItems.map((item, index) => (
+                                    <div key={index} className="ticket-item">
+                                        <span className="item-qty">{item.quantity}x</span>
+                                        <span>{item.name}</span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="ticket-actions">
+                                {order.status === 'pending' && (
+                                    <button className="btn-status btn-start"
+                                            onClick={() => updateOrderStatus(order.id, 'in_progress')}>
+                                        Zacznij przygotowywać
+                                    </button>
                                 )}
-                            {order.status === 'in_progress' && (
-                                <button className="btn-status btn-finish"
-                                        onClick={() => updateOrderStatus(order.id, 'completed')}>
-                                    Wydaj danie
-                                </button>
+                                {order.status === 'in_progress' && (
+                                    <button className="btn-status btn-finish"
+                                            onClick={() => updateOrderStatus(order.id, 'completed')}>
+                                        Wydaj danie
+                                    </button>
                                 )}
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         </div>
     );
