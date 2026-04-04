@@ -95,37 +95,39 @@ export default function Menu({ onAdd }) {
                 <p style={{color: '#6b7280'}}>Menu jest jeszcze puste. Oczekuj na zmiany</p>
             ) : (
                 <div className="menu-content">
+                    {categories.filter(cat => cat.name !== 'Wszystkie').map(cat => {
+                        const isVisible = activeCategory === 'Wszystkie' || activeCategory === cat.name;
+                        if (!isVisible) return null;
 
-                    {activeCategory === 'Wszystkie' ? (
-                        categories.filter(cat => cat.name !== 'Wszystkie').map(cat => {
-                            const catProducts = sortedProducts.filter(p => (p.category || 'Dania Główne') === cat.name);
+                        const catProducts = sortedProducts.filter(p => (p.category || 'Dania Główne') === cat.name);
 
-                            if (catProducts.length === 0) return null;
+                        if (catProducts.length === 0) {
+                            if (activeCategory !== 'Wszystkie') {
+                                return (
+                                    <p key={`empty-${cat.name}`} style={{ textAlign: 'center', color: '#6b7280', padding: '2rem 0' }}>
+                                        Brak dań w tej kategorii
+                                    </p>
+                                );
+                            }
+                            return null;
+                        }
 
-                            const SectionIcon = cat.icon;
+                        const SectionIcon = cat.icon;
 
-                            return (
-                                <div key={cat.name} className="menu-category-section">
+                        return (
+                            <div key={cat.name} className="menu-category-section">
+                                {activeCategory === 'Wszystkie' && (
                                     <h3 className="menu-category-header">
                                         <SectionIcon size={24} className="category-header-icon" />
                                         {cat.name}
                                     </h3>
-                                    <div className="menu-grid">
-                                        {catProducts.map(renderProductCard)}
-                                    </div>
+                                )}
+                                <div className="menu-grid">
+                                    {catProducts.map(renderProductCard)}
                                 </div>
-                            );
-                        })
-                    ) : (
-                        <div className="menu-grid">
-                            {sortedProducts.map(renderProductCard)}
-                            {sortedProducts.length === 0 && (
-                                <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#6b7280', padding: '2rem 0'}}>
-                                    Brak dań w tej kategorii
-                                </p>
-                            )}
-                        </div>
-                    )}
+                            </div>
+                        );
+                    })}
                 </div>
             )}
         </div>

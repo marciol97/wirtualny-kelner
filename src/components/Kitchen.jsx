@@ -30,18 +30,22 @@ export default function Kitchen() {
         }
     };
 
+    const kitchenOrders = orders.filter(order => {
+        return order.items.some(item => item.category !== 'Napoje');
+    });
+
     return (
         <div className="kitchen-container">
             <h2 className="kitchen-header">Panel Kuchenny</h2>
 
             <div className="orders-grid">
-                {orders.length === 0 && (
+                {kitchenOrders.length === 0 && (
                     <p style={{textAlign: 'center', gridColumn: '1 / -1', color: '#6b7280'}}>
                         Brak zamówień do realizacji
                     </p>
                 )}
 
-                {orders.map(order => {
+                {kitchenOrders.map(order => {
                     const kitchenItems = order.items.filter(item => item.category !== 'Napoje');
 
                     if (kitchenItems.length === 0) return null;
