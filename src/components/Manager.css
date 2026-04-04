@@ -158,3 +158,36 @@
     flex-direction: column;
     gap: 0.5rem;
 }
+
+{/* Przycisk widocznosci */}
+
+.btn-toggle {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 0.25rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-toggle-on {
+    background-color: #10b981;
+    color: white;
+}
+
+.btn-toggle-on:hover { background-color: #059669; }
+
+.btn-toggle-off {
+    background-color: #e5e7eb;
+    color: #6b7280;
+    border: 1px solid #d1d5db;
+}
+
+.btn-toggle-off:hover { background-color: #d1d5db; }
+
+.manager-item {
+    transition: opacity 0.4s ease;
+}
+.manager-item:has(.btn-toggle-off) {
+    opacity: 0.6;
+}

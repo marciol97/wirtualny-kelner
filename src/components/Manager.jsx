@@ -14,6 +14,7 @@ export default function Manager() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [existingImageUrl, setExistingImageUrl] = useState('');
+    const [category, setCategory] = useState('Dania Główne');
 
     // pobieranie menu z bazy
     useEffect(() => {
@@ -56,7 +57,8 @@ export default function Manager() {
                     name: name,
                     price: parsedPrice,
                     description: description,
-                    imageUrl: finalImageUrl
+                    imageUrl: finalImageUrl,
+                    category: category
                 });
             } else {
                 await addDoc(collection(db, 'menu'), {
@@ -64,7 +66,8 @@ export default function Manager() {
                     price: parsedPrice,
                     description: description,
                     imageUrl: finalImageUrl,
-                    available: true
+                    available: true,
+                    category: category
                 });
             }
             resetForm();
@@ -85,6 +88,7 @@ export default function Manager() {
         setDescription(item.description || '');
         setExistingImageUrl(item.imageUrl || '');
         setImageFile(null);
+        setCategory(item.category || 'Dania Główne');
 
         const fileInput = document.getElementById('file-upload');
         if(fileInput) fileInput.value = '';
@@ -99,9 +103,23 @@ export default function Manager() {
         setDescription('');
         setExistingImageUrl('');
         setImageFile(null);
+        setCategory('Dania Główne');
         const fileInput = document.getElementById('file-upload');
         if (fileInput) fileInput.value = '';
     };
+
+    const handleToggleVisibility = async (id, currentStatus) => {
+        try {
+            const itemRef = doc(db, 'menu', id);
+            const isCurrentlyAvailable = currentStatus !== false;
+
+            await updateDoc(itemRef, {
+                available: !isCurrentlyAvailable
+            });
+        } catch (error) {
+            console.error("Błąd zmiany widoczności:", error);
+        }
+    }
 
     // usuwanie dania
     const handleDelete = async (id) => {
@@ -134,6 +152,19 @@ export default function Manager() {
                                 onChange={(e) => setName(e.target.value)}
                                 required
                             />
+                        </div>
+
+                        <div className="form-group">
+                            <label className="form-label">Kategoria</label>
+                            <select
+                                className="form-input"
+                                value={category}
+                                onChange={(e) => setCategory(e.target.value)}>
+                                <option value="Przystawki">Przystawki</option>
+                                <option value="Dania Główne">Dania Główne</option>
+                                <option value="Napoje">Napoje</option>
+                                <option value="Desery">Desery</option>
+                            </select>
                         </div>
 
                         <div className="form-group">
@@ -205,6 +236,12 @@ export default function Manager() {
                                     </div>
                                 </div>
                                 <div className="manager-item-actions">
+                                    <button
+                                        type="button"
+                                        className={`btn-toggle ${item.available !== false ? 'btn-toggle-on' : 'btn-toggle-off'}`}
+                                        onClick={() => handleToggleVisibility(item.id, item.available)}>
+                                        {item.available !== false ? 'Widoczne' : 'Ukryte'}
+                                    </button>
                                     <button
                                         className="btn-edit"
                                         onClick={() => handleEditClick(item)}>

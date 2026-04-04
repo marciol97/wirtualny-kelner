@@ -2,11 +2,21 @@ import React, {useEffect, useState} from 'react';
 import './Menu.css';
 import {collection, onSnapshot} from "firebase/firestore";
 import {db} from "../firebase.js";
+import {LayoutGrid, Salad, UtensilsCrossed, CupSoda, CakeSlice} from "lucide-react"; //ikonki do menu
 
 export default function Menu({ onAdd }) {
 
     const [products, setProducts] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [activeCategory, setActiveCategory] = useState('Wszystkie');
+
+    const categories =[
+        {name: 'Wszystkie', icon: LayoutGrid },
+        {name: 'Przystawki', icon: Salad },
+        {name: 'Dania Główne', icon: UtensilsCrossed},
+        {name: 'Napoje', icon: CupSoda},
+        {name: 'Desery', icon: CakeSlice}
+    ];
 
     useEffect(() => {
         const unsubscribe = onSnapshot(collection(db, 'menu'), (snapshot) => {
@@ -20,9 +30,42 @@ export default function Menu({ onAdd }) {
         return () => unsubscribe();
     }, []);
 
+    const categoryOrder = {
+        'Przystawki': 1,
+        'Dania Główne': 2,
+        'Napoje': 3,
+        'Desery': 4
+    };
+
+    const availableProducts = products.filter(p => p.available !== false);
+
+    const filteredProducts = activeCategory === 'Wszystkie' ? availableProducts : availableProducts.filter(p => (p.category || 'Dania Główne') === activeCategory);
+
+    const sortedProducts = [...filteredProducts].sort((a, b) => {
+        const weightA = categoryOrder[a.category || 'Dania Główne'] || 99;
+        const weightB = categoryOrder[b.category || 'Dania Główne'] || 99;
+
+        return weightA - weightB;
+    })
+
     return (
         <div className="menu-container">
             <h2 className="menu-title">Nasze Menu</h2>
+
+            <div className="category-filter-bar">
+                {categories.map(cat => {
+                    const IconComponent = cat.icon;
+                    return (
+                        <button
+                            key={cat.name}
+                            className={`category-pill ${activeCategory === cat.name ? 'active' : ''}`}
+                            onClick={() => setActiveCategory(cat.name)}>
+                            <IconComponent size={18} className="category-icon" />
+                            <span>{cat.name}</span>
+                        </button>
+                        );
+                })}
+            </div>
 
             {isLoading ? (
                 <p>Wczytywanie pyszności...</p>
@@ -30,7 +73,7 @@ export default function Menu({ onAdd }) {
                 <p style={{color: '#6b7280'}}>Menu jest jeszcze puste. Oczekuj na zmiany</p>
             ) : (
                 <div className="menu-grid">
-                    {products.map((product) => (
+                    {sortedProducts.map((product) => (
                         <div key={product.id} className="product-card">
                             {product.imageUrl && product.imageUrl.trim() !== "" && (
                                 <div className="product-image-container">
@@ -49,6 +92,12 @@ export default function Menu({ onAdd }) {
                             </button>
                         </div>
                     ))}
+
+                    {filteredProducts.length === 0 && (
+                        <p style={{gridColumn: '1 / -1', textAlign: 'center', color: '#6b7280', padding: '2rem 0' }}>
+                            Brak dań w tej kategorii
+                        </p>
+                    )}
                 </div>
             )}
         </div>
