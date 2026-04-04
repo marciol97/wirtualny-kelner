@@ -97,7 +97,7 @@
     transform: scale(1.05);
 }
 
-{/* Pasek kategorii */}
+/* Pasek kategorii */
 
 .category-filter-bar {
     display: flex;
@@ -138,6 +138,26 @@
     background-color: #3b82f6;
     color: white;
     box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+}
+
+.menu-category-section {
+    margin-bottom: 3.5rem;
+}
+
+.menu-category-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.5rem;
+    color: #1f2937;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #e5e7eb;
+    font-weight: 700;
+}
+
+.category-header-icon {
+    color: #3b82f6;
 }
 
 /* responsywność urządzenia mobilne */

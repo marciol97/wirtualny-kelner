@@ -41,12 +41,31 @@ export default function Menu({ onAdd }) {
 
     const filteredProducts = activeCategory === 'Wszystkie' ? availableProducts : availableProducts.filter(p => (p.category || 'Dania Główne') === activeCategory);
 
+    //logika sortowania produktów
     const sortedProducts = [...filteredProducts].sort((a, b) => {
         const weightA = categoryOrder[a.category || 'Dania Główne'] || 99;
         const weightB = categoryOrder[b.category || 'Dania Główne'] || 99;
 
         return weightA - weightB;
     })
+
+    const renderProductCard = (product) => (
+        <div key={product.id} className="product-card">
+            {product.imageUrl && product.imageUrl.trim() !== "" && (
+                <div className="product-image-container">
+                    <img src={product.imageUrl} alt={product.name} className="product-image" />
+                </div>
+            )}
+            <div className="product-header" style={{marginTop: product.imageUrl ?'1rem' : '0'}}>
+                <h3 className="product-name">{product.name}</h3>
+                <span className="product-price">{(Number(product.price) || 0).toFixed(2)} zł</span>
+            </div>
+            <p className="product-description">{product.description}</p>
+            <button onClick={() => onAdd(product)} className="btn-add">
+                Dodaj do zamówienia
+            </button>
+        </div>
+    )
 
     return (
         <div className="menu-container">
@@ -72,31 +91,37 @@ export default function Menu({ onAdd }) {
             ) : products.length === 0 ? (
                 <p style={{color: '#6b7280'}}>Menu jest jeszcze puste. Oczekuj na zmiany</p>
             ) : (
-                <div className="menu-grid">
-                    {sortedProducts.map((product) => (
-                        <div key={product.id} className="product-card">
-                            {product.imageUrl && product.imageUrl.trim() !== "" && (
-                                <div className="product-image-container">
-                                    <img src={product.imageUrl} alt={product.name} className="product-image" />
+                <div className="menu-content">
+
+                    {activeCategory === 'Wszystkie' ? (
+                        categories.filter(cat => cat.name !== 'Wszystkie').map(cat => {
+                            const catProducts = sortedProducts.filter(p => (p.category || 'Dania Główne') === cat.name);
+
+                            if (catProducts.length === 0) return null;
+
+                            const SectionIcon = cat.icon;
+
+                            return (
+                                <div key={cat.name} className="menu-category-section">
+                                    <h3 className="menu-category-header">
+                                        <SectionIcon size={24} className="category-header-icon" />
+                                        {cat.name}
+                                    </h3>
+                                    <div className="menu-grid">
+                                        {catProducts.map(renderProductCard)}
+                                    </div>
                                 </div>
+                            );
+                        })
+                    ) : (
+                        <div className="menu-grid">
+                            {sortedProducts.map(renderProductCard)}
+                            {sortedProducts.length === 0 && (
+                                <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#6b7280', padding: '2rem 0'}}>
+                                    Brak dań w tej kategorii
+                                </p>
                             )}
-                            <div className="product-header" style={{marginTop: product.imageUrl ? '1rem' : '0'}}>
-                                <h3 className="product-name">{product.name}</h3>
-                                <span className="product-price">{product.price.toFixed(2)} zł</span>
-                            </div>
-
-                            <p className="product-description">{product.description}</p>
-
-                            <button onClick={() => onAdd(product)} className="btn-add">
-                                Dodaj do zamówienia
-                            </button>
                         </div>
-                    ))}
-
-                    {filteredProducts.length === 0 && (
-                        <p style={{gridColumn: '1 / -1', textAlign: 'center', color: '#6b7280', padding: '2rem 0' }}>
-                            Brak dań w tej kategorii
-                        </p>
                     )}
                 </div>
             )}
