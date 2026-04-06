@@ -192,6 +192,46 @@
     opacity: 0.6;
 }
 
+/* stylowanie sekcji składników */
+
+.ingredient-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.ingredient-pill.main {
+    background-color: #3b82f6;
+    color: white;
+}
+
+.ingredient-pill.addon {
+    background-color: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #10b981;
+}
+
+.btn-remove-ing {
+    background: transparent;
+    border: none;
+    color: inherit;
+    font-weight: bold;
+    font-size: 1.1rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 0.25rem;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.btn-remove-ing:hover {
+    opacity: 1;
+}
+
 /* responsywność na telefon */
 
 @media (max-width: 768px) {
