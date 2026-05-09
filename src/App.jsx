@@ -24,6 +24,19 @@ function App() {
     useEffect(() => {
         const queryParams = new URLSearchParams(window.location.search);
 
+        const storedTable = localStorage.getItem('tableNumber');
+        const lastActiveTime = localStorage.getItem('lastActiveTime');
+        const storedBillId = localStorage.getItem('activeBillId');
+
+        if (storedTable && !storedBillId && lastActiveTime) {
+            const currentTime = new Date().getTime();
+            if (currentTime - parseInt(lastActiveTime) > 900000) {
+                localStorage.removeItem('tableNumber');
+                localStorage.removeItem('lastActiveTime');
+                setTableNumber(null);
+            }
+        }
+
         // odczytywanie kodów qr z adresu
         const tableParam = queryParams.get("table");
         if (tableParam) {
@@ -52,6 +65,9 @@ function App() {
 
                         if (existingBillId !== myStoredBillId) {
                             alert(`Stolik nr ${tableParam} jest aktualnie zajęty przez inną osobę!`);
+                            localStorage.removeItem('tableNumber');
+                            localStorage.removeItem('lastActiveTime');
+                            setTableNumber(null);
                             window.history.replaceState(null, '', window.location.pathname);
                             return;
                         }
@@ -59,6 +75,7 @@ function App() {
 
                     setTableNumber(tableParam);
                     localStorage.setItem('tableNumber', tableParam);
+                    localStorage.setItem('lastActiveTime', new Date().getTime().toString());
                     window.history.replaceState(null, '', window.location.pathname);
                 } catch (error) {
                     console.error("Błąd podczas weryfikacji stolika:", error);
@@ -78,6 +95,7 @@ function App() {
                         await updateDoc(billRef, { status: 'paid' });
                         localStorage.removeItem('activeBillId');
                         localStorage.removeItem('tableNumber');
+                        localStorage.removeItem('lastActiveTime');
                         setActiveBillId(null);
                         setTableNumber(null);
                         setIsOnlinePaymentSuccess(true);
@@ -139,6 +157,24 @@ function App() {
             let currentBillId = activeBillId;
 
             if (!currentBillId) {
+                const checkConcurrencyQuery = query(
+                    collection(db, 'bills'),
+                    where('tableNumber', '==', Number(tableNumber)),
+                    where('status', '==', 'open')
+                );
+                const concurrencySnap = await getDocs(checkConcurrencyQuery);
+
+                if (!concurrencySnap.empty) {
+                    alert("Przepraszamy, ten stolik został właśnie zajęty przez inną osobę! Twoja sesja wygasła.");
+
+                    setCart([]);
+                    setTableNumber(null);
+                    localStorage.removeItem('tableNumber');
+                    localStorage.removeItem('lastActiveTime');
+                    setIsSubmitting(false);
+                    return;
+                }
+
                 const newBillRef = await addDoc(collection(db, 'bills'), {
                     tableNumber: Number(tableNumber),
                     status: 'open',
@@ -187,6 +223,7 @@ function App() {
 
             setCart([]);
             setOrderSuccess(true);
+            localStorage.setItem('lastActiveTime', new Date().getTime().toString());
 
             setTimeout(() => {
                 setOrderSuccess(false);
@@ -238,6 +275,7 @@ function App() {
             await updateDoc(billRef, { status: 'paid' });
             localStorage.removeItem('activeBillId');
             localStorage.removeItem('tableNumber');
+            localStorage.removeItem('lastActiveTime');
             setActiveBillId(null);
             setTableNumber(null);
             setIsPaymentView(false);
