@@ -18,11 +18,57 @@ function App() {
     const [billItems, setBillItems] = useState([]);
     const [isBillRequestedView, setIsBillRequestedView] = useState(false);
     const [isOnlinePaymentSuccess, setIsOnlinePaymentSuccess] = useState(false);
+    const [tableNumber, setTableNumber] = useState(localStorage.getItem('tableNumber') || null);
 
 
     useEffect(() => {
         const queryParams = new URLSearchParams(window.location.search);
 
+        // odczytywanie kodów qr z adresu
+        const tableParam = queryParams.get("table");
+        if (tableParam) {
+            const validateAndSetTable = async () => {
+                try {
+                    const qrQuery = query(collection(db, 'qr_codes'), where('tableNumber', '==', Number(tableParam)));
+                    const qrSnapshot = await getDocs(qrQuery);
+
+                    if (qrSnapshot.empty) {
+                        alert(`Błąd: Stolik nr ${tableParam} nie istnieje w systemie!`);
+                        window.history.replaceState(null, '', window.location.pathname);
+                        return;
+                    }
+
+                    const billQuery = query(
+                        collection(db, 'bills'),
+                        where('tableNumber', '==', Number(tableParam)),
+                        where('status', '==', 'open')
+                    );
+                    const billSnapshot = await getDocs(billQuery);
+
+                    if (!billSnapshot.empty) {
+                        const existingBillId = billSnapshot.docs[0].id;
+
+                        const myStoredBillId = localStorage.getItem('activeBillId');
+
+                        if (existingBillId !== myStoredBillId) {
+                            alert(`Stolik nr ${tableParam} jest aktualnie zajęty przez inną osobę!`);
+                            window.history.replaceState(null, '', window.location.pathname);
+                            return;
+                        }
+                    }
+
+                    setTableNumber(tableParam);
+                    localStorage.setItem('tableNumber', tableParam);
+                    window.history.replaceState(null, '', window.location.pathname);
+                } catch (error) {
+                    console.error("Błąd podczas weryfikacji stolika:", error);
+                }
+            };
+
+            validateAndSetTable();
+        }
+
+        // płatności przez stripe
         if (queryParams.get("success")) {
             const billId = queryParams.get("billId");
             if (billId) {
@@ -31,7 +77,9 @@ function App() {
                         const billRef = doc(db, 'bills', billId);
                         await updateDoc(billRef, { status: 'paid' });
                         localStorage.removeItem('activeBillId');
+                        localStorage.removeItem('tableNumber');
                         setActiveBillId(null);
+                        setTableNumber(null);
                         setIsOnlinePaymentSuccess(true);
 
                         window.history.replaceState(null, '', window.location.pathname);
@@ -80,6 +128,11 @@ function App() {
     const placeOrder = async () => {
         if (cart.length === 0) return;
 
+        if (!tableNumber) {
+            alert("Nie przypisano stolika! Zeskanuj kod QR z Twojego stolika, aby złożyć zamówienie.");
+            return;
+        }
+
         setIsSubmitting(true); // włącza blokade przycisku
 
         try {
@@ -87,7 +140,7 @@ function App() {
 
             if (!currentBillId) {
                 const newBillRef = await addDoc(collection(db, 'bills'), {
-                    tableNumber: 5,
+                    tableNumber: Number(tableNumber),
                     status: 'open',
                     createdAt: serverTimestamp()
                 });
@@ -117,7 +170,7 @@ function App() {
             }
 
             await addDoc(collection(db, 'orders'), {
-                tableNumber: 5,
+                tableNumber: Number(tableNumber),
                 dailyOrderNumber: nextTicketNum,
                 billId: currentBillId,
                 status: 'pending',
@@ -184,7 +237,9 @@ function App() {
             const billRef = doc(db, 'bills', activeBillId);
             await updateDoc(billRef, { status: 'paid' });
             localStorage.removeItem('activeBillId');
+            localStorage.removeItem('tableNumber');
             setActiveBillId(null);
+            setTableNumber(null);
             setIsPaymentView(false);
             setIsBillRequestedView(true);
         } catch (e) {
@@ -195,7 +250,7 @@ function App() {
     const handleOnlinePayment = async () => {
         setIsSubmitting(true);
         try {
-            const response = await fetch('import.meta.env.VITE_API_URL', {
+            const response = await fetch(import.meta.env.VITE_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -250,7 +305,8 @@ function App() {
                                 <div style={{fontSize: '3rem', marginBottom: '1rem'}}>🎉</div>
                                 <h2 style={{marginBottom: '1rem'}}>Płatność zakończona sukcesem!</h2>
                                 <p style={{color: '#4b5563', marginBottom: '2rem', lineHeight: '1.5'}}>
-                                    Dziękujemy za opłacenie rachunku. Zapraszamy ponownie!
+                                    Dziękujemy za opłacenie rachunku. Twoja wizyta została zakończona.
+                                    Aby złożyć nowe zamówienie, zeskanuj ponownie kod QR ze stolika.
                                 </p>
                                 <button
                                     className="btn-order"
@@ -269,14 +325,15 @@ function App() {
                                 <div style={{fontSize: '3rem', marginBottom: '1rem'}}>🧾</div>
                                 <h2 style={{marginBottom: '1rem'}}>Rachunek w drodze!</h2>
                                 <p style={{color: '#4b5563', marginBottom: '2rem', lineHeight: '1.5'}}>
-                                    Dziękujemy! Kelner za chwilę podejdzie do Twojego stolika z rachunkiem.
+                                    Kelner za chwilę podejdzie do Ciebie z rachunkiem.
+                                    Po uregulowaniu płatności, aby zamówić ponownie, zeskanuj kod QR ze stolika.
                                 </p>
                                 <button
                                     className="btn-order"
                                     onClick={handleReturnToMain}
                                     style={{backgroundColor: '#3b82f6'}}
                                 >
-                                    Powrót do menu głównego
+                                    Powrót do menu
                                 </button>
                             </div>
                         </section>
@@ -341,8 +398,12 @@ function App() {
                     <>
                         <header className="header">
                             <h1>Wirtualny Kelner</h1>
+                            <p style={{color: '#6b7280', fontSize: '0.9rem', marginTop: '0.5rem'}}>
+                                {tableNumber ? `Zeskanowano stolik nr: ${tableNumber}` : 'Brak przypisanego stolika'}
+                            </p>
+
                             {activeBillId && <p style={{color: '#10b981', fontSize: '0.9rem', marginTop: '0.5rem'}}>
-                                Rachunek otwarty (Stolik 5)
+                                Rachunek otwarty (Stolik {tableNumber})
                             </p>}
                         </header>
 

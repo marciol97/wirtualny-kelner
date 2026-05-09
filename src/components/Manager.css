@@ -261,3 +261,144 @@
         font-size: 0.85rem;
     }
 }
+
+/* ZAKŁADKI MENADŻERA */
+.manager-tabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 0.5rem;
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    padding: 0.5rem 1rem;
+    font-size: 1.1rem;
+    color: #6b7280;
+    cursor: pointer;
+    font-weight: 500;
+    position: relative;
+    transition: color 0.2s;
+}
+
+.tab-btn:hover {
+    color: #374151;
+}
+
+.tab-btn.active {
+    color: #3b82f6;
+}
+
+.tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -0.6rem;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background-color: #3b82f6;
+    border-radius: 3px 3px 0 0;
+}
+
+/* SEKCJA KODÓW QR */
+.manager-qr-section {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.qr-generator-form {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border: 1px solid #e5e7eb;
+    max-width: 800px;
+}
+
+.qr-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.5rem;
+}
+
+.qr-card {
+    background: white;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border: 1px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.qr-card-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #f3f4f6;
+    padding-bottom: 0.5rem;
+}
+
+.qr-card-header h4 {
+    margin: 0;
+    color: #1f2937;
+}
+
+.qr-code-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.qr-url-text {
+    font-size: 0.7rem;
+    color: #9ca3af;
+    word-break: break-all;
+    text-align: center;
+}
+
+.print-only {
+    display: none;
+}
+
+/* UKRYWANIE ELEMENTÓW DO WYDRUKU */
+@media print {
+    /* Ukryj nawigację, przyciski, formularze */
+    .no-print, .top-navigation, .header, .manager-header {
+        display: none !important;
+    }
+
+    /* Wyzeruj marginesy aplikacji, żeby kody zajęły całą kartkę */
+    body, .app-container, .manager-container, .manager-qr-section {
+        margin: 0;
+        padding: 0;
+        background: white;
+    }
+
+    .qr-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        justify-content: flex-start;
+    }
+
+    .qr-card {
+        border: 2px dashed #ccc; /* Linia ułatwiająca wycinanie */
+        box-shadow: none;
+        break-inside: avoid; /* Zapobiega obcięciu kodu na połowie strony */
+    }
+
+    .print-only {
+        display: block;
+        margin-bottom: 10px;
+        font-size: 24px;
+        color: black;
+    }
+}

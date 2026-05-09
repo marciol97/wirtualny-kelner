@@ -1,5 +1,4 @@
 const { onRequest } = require("firebase-functions/v2/https");
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const cors = require("cors")({ origin: true });
 
 exports.createCheckoutSession = onRequest((req, res) => {
@@ -9,7 +8,10 @@ exports.createCheckoutSession = onRequest((req, res) => {
         }
 
         try {
+            const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+
             const { items, billId } = req.body;
+
             const YOUR_DOMAIN = req.headers.origin;
 
             const session = await stripe.checkout.sessions.create({
