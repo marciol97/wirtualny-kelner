@@ -195,7 +195,7 @@ function App() {
     const handleOnlinePayment = async () => {
         setIsSubmitting(true);
         try {
-            const response = await fetch('http://localhost:4242/create-checkout-session', {
+            const response = await fetch('import.meta.env.VITE_API_URL', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
