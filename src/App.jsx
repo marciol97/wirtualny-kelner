@@ -2,6 +2,7 @@ import Menu from './components/Menu.jsx';
 import Kitchen from "./components/Kitchen.jsx";
 import Manager from "./components/Manager.jsx";
 import Bar from "./components/Bar.jsx";
+import Waiter from "./components/Waiter.jsx";
 import { useState, useEffect} from "react";
 import './App.css';
 import { collection, serverTimestamp, doc, addDoc, getDocs, query, where, orderBy, limit, updateDoc} from 'firebase/firestore';
@@ -24,6 +25,7 @@ function App() {
     useEffect(() => {
         const queryParams = new URLSearchParams(window.location.search);
 
+        // czyszczenie sesji po 15 minutach braku aktywności
         const storedTable = localStorage.getItem('tableNumber');
         const lastActiveTime = localStorage.getItem('lastActiveTime');
         const storedBillId = localStorage.getItem('activeBillId');
@@ -51,28 +53,6 @@ function App() {
                         return;
                     }
 
-                    const billQuery = query(
-                        collection(db, 'bills'),
-                        where('tableNumber', '==', Number(tableParam)),
-                        where('status', '==', 'open')
-                    );
-                    const billSnapshot = await getDocs(billQuery);
-
-                    if (!billSnapshot.empty) {
-                        const existingBillId = billSnapshot.docs[0].id;
-
-                        const myStoredBillId = localStorage.getItem('activeBillId');
-
-                        if (existingBillId !== myStoredBillId) {
-                            alert(`Stolik nr ${tableParam} jest aktualnie zajęty przez inną osobę!`);
-                            localStorage.removeItem('tableNumber');
-                            localStorage.removeItem('lastActiveTime');
-                            setTableNumber(null);
-                            window.history.replaceState(null, '', window.location.pathname);
-                            return;
-                        }
-                    }
-
                     setTableNumber(tableParam);
                     localStorage.setItem('tableNumber', tableParam);
                     localStorage.setItem('lastActiveTime', new Date().getTime().toString());
@@ -92,7 +72,7 @@ function App() {
                 const closeBill = async () => {
                     try {
                         const billRef = doc(db, 'bills', billId);
-                        await updateDoc(billRef, { status: 'paid' });
+                        await updateDoc(billRef, { status: 'paid_online' });
                         localStorage.removeItem('activeBillId');
                         localStorage.removeItem('tableNumber');
                         localStorage.removeItem('lastActiveTime');
@@ -157,23 +137,6 @@ function App() {
             let currentBillId = activeBillId;
 
             if (!currentBillId) {
-                const checkConcurrencyQuery = query(
-                    collection(db, 'bills'),
-                    where('tableNumber', '==', Number(tableNumber)),
-                    where('status', '==', 'open')
-                );
-                const concurrencySnap = await getDocs(checkConcurrencyQuery);
-
-                if (!concurrencySnap.empty) {
-                    alert("Przepraszamy, ten stolik został właśnie zajęty przez inną osobę! Twoja sesja wygasła.");
-
-                    setCart([]);
-                    setTableNumber(null);
-                    localStorage.removeItem('tableNumber');
-                    localStorage.removeItem('lastActiveTime');
-                    setIsSubmitting(false);
-                    return;
-                }
 
                 const newBillRef = await addDoc(collection(db, 'bills'), {
                     tableNumber: Number(tableNumber),
@@ -272,7 +235,7 @@ function App() {
     const handleCashPayment = async () => {
         try {
             const billRef = doc(db, 'bills', activeBillId);
-            await updateDoc(billRef, { status: 'paid' });
+            await updateDoc(billRef, { status: 'cash_requested' });
             localStorage.removeItem('activeBillId');
             localStorage.removeItem('tableNumber');
             localStorage.removeItem('lastActiveTime');
@@ -332,6 +295,10 @@ function App() {
                 <button className={`nav-btn ${currentView === 'manager' ? 'active' : ''}`}
                         onClick={() => setCurrentView('manager')}>
                     Menadżer
+                </button>
+                <button className={`nav-btn ${currentView === 'waiter' ? 'active' : ''}`}
+                        onClick={() => setCurrentView('waiter')}>
+                    Kelner
                 </button>
             </nav>
 
@@ -514,8 +481,10 @@ function App() {
                 <Kitchen />
             ) : currentView === 'manager' ?(
                 <Manager />
-            ) : (
+            ) : currentView === 'bar' ?(
                 <Bar />
+            ) : (
+                <Waiter />
             )}
 
         </div>

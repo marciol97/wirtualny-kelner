@@ -1,6 +1,6 @@
 import React, {useState, useEffect} from "react";
 import './Manager.css';
-import {collection, addDoc, deleteDoc, doc, onSnapshot, updateDoc, query, where, getDocs} from "firebase/firestore";
+import {collection, addDoc, deleteDoc, doc, onSnapshot, updateDoc, query, where, getDocs, setDoc} from "firebase/firestore";
 import {ref, uploadBytes, getDownloadURL} from "firebase/storage";
 import {db, storage} from "../firebase.js";
 import {QRCodeSVG} from "qrcode.react";
@@ -29,6 +29,10 @@ export default function Manager() {
     //stany dla kodów qr
     const [qrCodes, setQrCodes] = useState([]);
     const [tableNumInput, setTableNumInput] = useState('');
+
+    //stany dla zmiany kodu PIN
+    const [newPin, setNewPin] = useState('');
+    const [confirmPin, setConfirmPin] = useState('');
 
     // pobieranie menu z bazy
     useEffect(() => {
@@ -247,6 +251,32 @@ export default function Manager() {
         }
     };
 
+    //Logika zmiany kodu PIN
+    const handlePinChange = async (e) => {
+        e.preventDefault();
+
+        if (newPin !== confirmPin) {
+            return alert("Wpisane kody PIN nie są identyczne!");
+        }
+
+        if (!/^\d{4}$/.test(newPin)) {
+            return alert("Kod PIN musi składać się z dokładnie 4 cyfr!");
+        }
+
+        try {
+            await setDoc(doc(db, 'settings', 'security'), {
+                managerPin: newPin
+            }, { merge: true });
+
+            alert("Kod PIN został pomyślnie zmieniony!");
+            setNewPin('');
+            setConfirmPin('');
+        } catch (error) {
+            console.error("Błąd podczas zmiany PIN:", error);
+            alert("Nie udało się zmienić kodu PIN.");
+        }
+    };
+
     const displayOrder = ['Przystawki', 'Dania Główne', 'Napoje', 'Desery'];
 
     return (
@@ -266,6 +296,12 @@ export default function Manager() {
                     onClick={() => setActiveTab('qr')}
                 >
                     Kody QR Stolików
+                </button>
+                <button
+                    className={`tab-btn ${activeTab === 'auth' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('auth')}
+                >
+                    Autoryzacje i PIN
                 </button>
             </div>
 
@@ -443,6 +479,56 @@ export default function Manager() {
                                 Brak wygenerowanych kodów QR. Wpisz numer u góry, aby zacząć.
                             </p>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'auth' && (
+                <div className="manager-layout no-print" style={{ justifyContent: 'center', marginTop: '2rem' }}>
+                    <div className="manager-form-section" style={{ maxWidth: '500px', width: '100%' }}>
+                        <form className="manager-form" onSubmit={handlePinChange}>
+                            <h3 style={{ borderBottom: '2px solid #e5e7eb', paddingBottom: '0.5rem' }}>Autoryzacja Kelnerska</h3>
+                            <p style={{ color: '#6b7280', fontSize: '0.9rem', marginBottom: '1.5rem', lineHeight: '1.5' }}>
+                                Zmień główny kod PIN dla operacji wymagających autoryzacji (np. usuwanie pozycji z opłaconego rachunku).
+                                Domyślny systemowy PIN to <strong>1111</strong>.
+                            </p>
+
+                            <div className="form-group">
+                                <label className="form-label">Nowy 4-cyfrowy PIN</label>
+                                <input
+                                    type="password"
+                                    maxLength="4"
+                                    pattern="\d{4}"
+                                    className="form-input"
+                                    placeholder="Wpisz 4 cyfry"
+                                    value={newPin}
+                                    onChange={(e) => setNewPin(e.target.value)}
+                                    style={{ fontSize: '1.5rem', letterSpacing: '0.5rem', textAlign: 'center' }}
+                                    required
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label className="form-label">Powtórz nowy PIN</label>
+                                <input
+                                    type="password"
+                                    maxLength="4"
+                                    pattern="\d{4}"
+                                    className="form-input"
+                                    placeholder="Powtórz 4 cyfry"
+                                    value={confirmPin}
+                                    onChange={(e) => setConfirmPin(e.target.value)}
+                                    style={{ fontSize: '1.5rem', letterSpacing: '0.5rem', textAlign: 'center' }}
+                                    required
+                                />
+                            </div>
+
+                            <div className="form-actions" style={{ marginTop: '2rem' }}>
+                                <button type="submit" className="btn-submit" style={{ width: '100%' }}>
+                                    Zapisz nowy kod PIN
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

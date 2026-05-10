@@ -1,0 +1,318 @@
+/* BASE & LAYOUT */
+.waiter-container {
+    padding: 2rem 1rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.waiter-header {
+    font-size: 1.8rem;
+    color: #1f2937;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.bills-grid {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+/* SHARED TYPOGRAPHY & FLEXBOX */
+.bill-card-header,
+.modal-item,
+.modal-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.table-number,
+.bill-total,
+.modal-item-price,
+.modal-summary {
+    font-weight: bold;
+}
+
+.bill-id-mini,
+.modal-subtitle {
+    font-size: 0.875rem;
+    color: #6b7280;
+    font-family: monospace;
+}
+
+.bill-total {
+    font-size: 2rem;
+    color: #1f2937;
+    text-align: center;
+}
+
+.modal-header h3 {
+    font-size: 1.5rem;
+    margin: 0;
+}
+
+/* BILL CARD */
+.bill-card {
+    background: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    border: 2px solid transparent;
+    transition: transform 0.2s;
+}
+
+.bill-card:hover {
+    transform: translateY(-2px);
+}
+
+.bill-card-header {
+    background: #f3f4f6;
+    padding: 1rem;
+    border-radius: 0.5rem 0.5rem 0 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.bill-card-body {
+    padding: 1.5rem 1rem;
+    text-align: center;
+    flex-grow: 1;
+}
+
+.bill-status-text {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #4b5563;
+}
+
+.bill-card-actions {
+    padding: 1rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+/* STATUSY KARTY */
+.bill-card.open {
+    border-color: #d1d5db;
+}
+
+.bill-card.paid_online {
+    border-color: #10b981;
+    background-color: #ecfdf5;
+}
+
+.bill-card.paid_online .bill-status-text {
+    color: #059669;
+}
+
+.bill-card.cash_requested {
+    border-color: #f59e0b;
+    animation: blink-yellow 1.5s infinite;
+}
+
+.bill-card.cash_requested .bill-status-text {
+    color: #b45309;
+}
+
+@keyframes blink-yellow {
+    0%, 100% {
+        background-color: white;
+    }
+    50% {
+        background-color: #fef3c7;
+        box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
+    }
+}
+
+/* MODALE (Wspólne cechy overlay i okienek) */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 50;
+    padding: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content,
+.pin-modal-content {
+    background: white;
+    border-radius: 0.5rem;
+    padding: 2rem;
+    width: 100%;
+}
+
+.modal-content {
+    max-width: 450px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.pin-modal-content {
+    max-width: 350px;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.modal-header {
+    text-align: center;
+    border-bottom: 2px dashed #d1d5db;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+}
+
+.modal-item-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.modal-item {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.modal-item-name strong {
+    color: #3b82f6;
+    margin-right: 0.5rem;
+}
+
+.modal-summary {
+    font-size: 1.25rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 2px dashed #d1d5db;
+}
+
+.modal-actions {
+    margin-top: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+/* WSPÓLNE STYLE PRZYCISKÓW */
+.btn-open-bill,
+.btn-print,
+.btn-action-primary {
+    padding: 0.75rem;
+    font-weight: bold;
+    border-radius: 0.375rem;
+    border: none;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-open-bill {
+    width: 100%;
+    background-color: #3b82f6;
+    color: white;
+}
+
+.btn-open-bill:hover {
+    background-color: #2563eb;
+}
+
+.btn-print {
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+}
+
+.btn-print:hover {
+    background: #e5e7eb;
+}
+
+.btn-action-primary {
+    color: white;
+}
+
+.btn-action-primary.cash {
+    background: #f59e0b;
+}
+
+.btn-action-primary.online {
+    background: #10b981;
+}
+
+.btn-close-modal {
+    background: none;
+    border: none;
+    color: #6b7280;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0.5rem;
+}
+
+/* USUWANIE POZYCJI I PIN */
+.btn-remove-item {
+    background: #fee2e2;
+    color: #ef4444;
+    border: 1px solid #f87171;
+    border-radius: 4px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-right: 0.75rem;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: bold;
+    transition: 0.2s;
+}
+
+.btn-remove-item:hover {
+    background: #ef4444;
+    color: white;
+}
+
+.removal-staging-area {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: #fef2f2;
+    border: 1px dashed #fca5a5;
+    border-radius: 0.5rem;
+}
+
+.pin-input {
+    width: 100%;
+    text-align: center;
+    font-size: 2rem;
+    letter-spacing: 0.5rem;
+    padding: 0.5rem;
+    border: 2px solid #d1d5db;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.pin-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+}
+
+/* DRUKOWANIE */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+
+    .print-section,
+    .print-section * {
+        visibility: visible;
+    }
+
+    .print-section {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+}
