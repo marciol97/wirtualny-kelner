@@ -9,6 +9,7 @@ export default function Manager() {
     const [activeTab, setActiveTab] = useState('menu');
 
     const [menuItems, setMenuItems] = useState([]);
+    const [ordersHistory, setOrdersHistory] = useState([]);
 
     const [name, setName] = useState('');
     const [price, setPrice] = useState('');
@@ -34,6 +35,11 @@ export default function Manager() {
     const [newPin, setNewPin] = useState('');
     const [confirmPin, setConfirmPin] = useState('');
 
+    //stany filtra sprzedaży
+    const [salesFilter, setSalesFilter] = useState('today');
+    const [customDate, setCustomDate] = useState(new Date().toISOString().split('T')[0]);
+    const [sortConfig, setSortConfig] = useState({ key: 'qty', direction: 'desc' });
+
     // pobieranie menu z bazy
     useEffect(() => {
         const unsubscribeMenu = onSnapshot(collection(db, 'menu'), (snapshot) => {
@@ -51,9 +57,17 @@ export default function Manager() {
             setQrCodes(qrs);
         });
 
+        const unsubscribeOrders = onSnapshot(collection(db, 'orders'), (snapshot) => {
+            const fetchedOrders = snapshot.docs.map(doc => ({
+                id: doc.id, ...doc.data()
+            }));
+            setOrdersHistory(fetchedOrders);
+        });
+
         return () => {
             unsubscribeMenu();
             unsubscribeQR();
+            unsubscribeOrders();
         };
     }, []);
 
@@ -277,6 +291,115 @@ export default function Manager() {
         }
     };
 
+    //funckja sortowania
+    const handleSort = (key) => {
+        setSortConfig(prev => ({
+            key: key,
+            direction: prev.key === key && prev.direction === 'desc' ? 'asc' : 'desc'
+        }));
+    };
+
+    //Logika raportu sprzedaży
+    const getFilteredSalesData = () => {
+        const now = new Date();
+        let startDate = new Date(0);
+        let endDate = new Date('9999-12-31T23:59:59');
+
+        if (salesFilter === 'today') {
+            startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        } else if (salesFilter === 'week') {
+            const firstDay = now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1);
+            startDate = new Date(now.setDate(firstDay));
+            startDate.setHours(0, 0, 0, 0);
+        } else if (salesFilter === 'month') {
+            startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        } else if (salesFilter === 'custom' && customDate) {
+            const [year, month, day] = customDate.split('-');
+            startDate = new Date(year, month - 1, day);
+            endDate = new Date(year, month - 1, day, 23, 59, 59, 999);
+        }
+
+        const filteredOrders = ordersHistory.filter(order => {
+            if (!order.createdAt) return false;
+            const orderDate = order.createdAt.toDate();
+            return orderDate >= startDate && orderDate <= endDate;
+        });
+
+        let totalRevenue = 0;
+        const itemStats = {};
+
+        filteredOrders.forEach(order => {
+            if (order.items) {
+                order.items.forEach(item => {
+                    const lineTotal = item.price * item.quantity;
+                    totalRevenue += lineTotal;
+
+                    if (!itemStats[item.productId]) {
+                        itemStats[item.productId] = { name: item.name, qty: 0, revenue: 0 };
+                    }
+                    itemStats[item.productId].qty += item.quantity;
+                    itemStats[item.productId].revenue += lineTotal;
+                });
+            }
+        });
+
+        const bestsellers = Object.values(itemStats).sort((a, b) => {
+            if (sortConfig.key === 'qty') {
+                return sortConfig.direction === 'desc' ? b.qty - a.qty : a.qty - b.qty;
+            } else {
+                return sortConfig.direction === 'desc' ? b.revenue - a.revenue : a.revenue - b.revenue;
+            }
+        });
+
+        return { totalRevenue, bestsellers, ordersCount: filteredOrders.length };
+    };
+
+    const getFilterDescriptionText = () => {
+        const now = new Date();
+
+        if (salesFilter === 'today') {
+            const todayStr = now.toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            return `Sprzedaż w dniu: ${todayStr}`;
+        }
+
+        if (salesFilter === 'week') {
+            const currentDay = now.getDay();
+            const distanceToMonday = currentDay === 0 ? -6 : 1 - currentDay;
+
+            const startOfWeek = new Date(now);
+            startOfWeek.setDate(now.getDate() + distanceToMonday);
+
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+            const startStr = startOfWeek.toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const endStr = endOfWeek.toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+            return `Sprzedaż w dniach: ${startStr} - ${endStr}`;
+        }
+
+        if (salesFilter === 'month') {
+            const monthStr = now.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' });
+            return `Sprzedaż: ${monthStr.charAt(0).toUpperCase() + monthStr.slice(1)}`;
+        }
+
+        if (salesFilter === 'all') {
+            return `Zestawienie całkowite (od początku działania)`;
+        }
+
+        if (salesFilter === 'custom' && customDate) {
+            const [year, month, day] = customDate.split('-');
+            const customDateObj = new Date(year, month - 1, day);
+            const customStr = customDateObj.toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            return `Sprzedaż w dniu: ${customStr}`;
+        }
+
+        return '';
+    };
+
+    const salesData = getFilteredSalesData();
+
     const displayOrder = ['Przystawki', 'Dania Główne', 'Napoje', 'Desery'];
 
     return (
@@ -297,6 +420,9 @@ export default function Manager() {
                 >
                     Kody QR Stolików
                 </button>
+                <button className={`tab-btn ${activeTab === 'sales' ? 'active' : ''}`} onClick={() => setActiveTab('sales')}>
+                    Raporty Sprzedaży
+                </button>
                 <button
                     className={`tab-btn ${activeTab === 'auth' ? 'active' : ''}`}
                     onClick={() => setActiveTab('auth')}
@@ -304,6 +430,92 @@ export default function Manager() {
                     Autoryzacje i PIN
                 </button>
             </div>
+
+            {/* widok raport sprzedazy*/}
+            {activeTab === 'sales' && (
+                <div className="manager-layout no-print" style={{ flexDirection: 'column' }}>
+
+                    {/* Filtry Czasowe */}
+                    <div className="sales-filters-wrapper">
+                        <div className="sales-date-group">
+                            <label className="sales-date-label">Konkretny dzień:</label>
+                            <input
+                                type="date"
+                                className={`sales-date-input ${salesFilter === 'custom' ? 'active' : ''}`}
+                                value={customDate}
+                                onChange={(e) => {
+                                    setCustomDate(e.target.value);
+                                    setSalesFilter('custom');
+                                }}
+                            />
+                        </div>
+
+                        <div className="sales-filter-divider"></div>
+
+                        <button className={`sales-filter-btn ${salesFilter === 'today' ? 'active' : ''}`} onClick={() => setSalesFilter('today')}>Dziś</button>
+                        <button className={`sales-filter-btn ${salesFilter === 'week' ? 'active' : ''}`} onClick={() => setSalesFilter('week')}>Ten Tydzień</button>
+                        <button className={`sales-filter-btn ${salesFilter === 'month' ? 'active' : ''}`} onClick={() => setSalesFilter('month')}>Ten Miesiąc</button>
+                        <button className={`sales-filter-btn ${salesFilter === 'all' ? 'active' : ''}`} onClick={() => setSalesFilter('all')}>Cały Czas</button>
+                    </div>
+
+                    <div className="sales-period-label">
+                        {getFilterDescriptionText()}
+                    </div>
+
+                    {/* Karty Statystyk */}
+                    <div className="sales-stats-grid">
+                        <div className="sales-stat-card green">
+                            <h4 className="sales-stat-title">Przychód Całkowity</h4>
+                            <div className="sales-stat-value">{salesData.totalRevenue.toFixed(2)} zł</div>
+                        </div>
+
+                        <div className="sales-stat-card blue">
+                            <h4 className="sales-stat-title">Złożone Zamówienia</h4>
+                            <div className="sales-stat-value">{salesData.ordersCount}</div>
+                        </div>
+                    </div>
+
+                    {/* Tabela Bestsellerów */}
+                    <div className="sales-table-wrapper">
+                        <h3 className="sales-table-header">Ranking sprzedaży produktów</h3>
+
+                        {salesData.bestsellers.length === 0 ? (
+                            <p style={{ color: '#6b7280', textAlign: 'center', padding: '3rem 1rem' }}>Brak danych sprzedażowych dla wybranego okresu.</p>
+                        ) : (
+                            <table className="sales-table">
+                                <thead>
+                                <tr>
+                                    <th>Miejsce</th>
+                                    <th>Produkt</th>
+
+                                    <th className="sortable" onClick={() => handleSort('qty')} title="Kliknij, aby posortować">
+                                        <span className={`sort-indicator ${sortConfig.key === 'qty' ? 'active' : ''}`}>
+                                            Sprzedane sztuki
+                                        </span>
+                                    </th>
+
+                                    <th className="sortable" style={{ textAlign: 'right' }} onClick={() => handleSort('revenue')} title="Kliknij, aby posortować">
+                                        <span className={`sort-indicator ${sortConfig.key === 'revenue' ? 'active' : ''}`}>
+                                            Wygenerowany przychód
+                                        </span>
+                                    </th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {salesData.bestsellers.map((item, idx) => (
+                                    <tr key={idx}>
+                                        <td style={{ fontWeight: 'bold', color: idx < 3 ? '#3b82f6' : '#6b7280' }}>#{idx + 1}</td>
+                                        <td style={{ fontWeight: '500', color: '#1f2937' }}>{item.name}</td>
+                                        <td style={{ color: '#4b5563' }}>{item.qty} szt.</td>
+                                        <td style={{ textAlign: 'right', fontWeight: 'bold', color: '#111827' }}>{item.revenue.toFixed(2)} zł</td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </table>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* widok panelu menu */}
             {activeTab === 'menu' && (
