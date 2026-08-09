@@ -3,10 +3,11 @@ import Kitchen from "./components/Kitchen.jsx";
 import Manager from "./components/Manager.jsx";
 import Bar from "./components/Bar.jsx";
 import Waiter from "./components/Waiter.jsx";
-import { useState, useEffect} from "react";
+import { useState, useEffect, useRef} from "react";
 import './App.css';
 import { collection, serverTimestamp, doc, addDoc, getDocs, query, where, orderBy, limit, updateDoc} from 'firebase/firestore';
 import { db } from './firebase';
+import { ShoppingBasket } from "lucide-react"
 
 function App() {
 
@@ -20,6 +21,29 @@ function App() {
     const [isBillRequestedView, setIsBillRequestedView] = useState(false);
     const [isOnlinePaymentSuccess, setIsOnlinePaymentSuccess] = useState(false);
     const [tableNumber, setTableNumber] = useState(localStorage.getItem('tableNumber') || null);
+    const cartSectionRef = useRef(null);
+    const [isCartVisible, setIsCartVisible] = useState(false);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                setIsCartVisible(entry.isIntersecting);
+            },
+            {threshold: 0.1}
+        );
+
+        if (cartSectionRef.current) {
+            observer.observe(cartSectionRef.current);
+        }
+
+        return () => {
+            if (cartSectionRef.current) {
+                observer.unobserve(cartSectionRef.current);
+            }
+        };
+    }, [currentView]);
+
+    const activeCartItemsCount = cart.filter(item => !item.ordered).reduce((sum, item) => sum + item.quantity, 0);
 
 
     useEffect(() => {
@@ -417,7 +441,7 @@ function App() {
                                 <Menu onAdd={addToCart} />
                             </section>
 
-                            <section className="cart-section">
+                            <section className="cart-section" ref={cartSectionRef}>
                                 <div className="cart-container">
                                     <h2 className="cart-title">Twój Koszyk</h2>
 
@@ -475,6 +499,19 @@ function App() {
                                 </div>
                             </section>
                         </main>
+
+                        <div
+                            className={`floating-cart-wrapper ${isCartVisible ? 'hidden' : ''}`}
+                            onClick={() => cartSectionRef.current?.scrollIntoView({ behavior: 'smooth' })}
+                        >
+                            <div className="floating-cart-btn">
+                                <ShoppingBasket size={24} color="white" />
+                                {activeCartItemsCount > 0 && (
+                                    <span className="floating-cart-badge">{activeCartItemsCount}</span>
+                                )}
+                            </div>
+                        </div>
+
                     </>
                 )
             ) :  currentView === 'kitchen' ? (
