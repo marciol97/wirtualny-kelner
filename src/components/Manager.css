@@ -269,9 +269,17 @@
     margin-bottom: 2rem;
     border-bottom: 2px solid #e5e7eb;
     padding-bottom: 0.5rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.manager-tabs::-webkit-scrollbar {
+    display: none;
 }
 
 .tab-btn {
+    flex-shrink: 0;
     background: none;
     border: none;
     padding: 0.5rem 1rem;
@@ -515,6 +523,7 @@
     border-radius: 1rem;
     box-shadow: 0 4px 6px rgba(0,0,0,0.05);
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .sales-table-header {
