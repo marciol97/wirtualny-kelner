@@ -270,6 +270,7 @@
     border-bottom: 2px solid #e5e7eb;
     padding-bottom: 0.5rem;
     overflow-x: auto;
+    overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
 }
