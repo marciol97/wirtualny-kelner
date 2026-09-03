@@ -23,6 +23,7 @@ function App() {
     const [tableNumber, setTableNumber] = useState(localStorage.getItem('tableNumber') || null);
     const cartSectionRef = useRef(null);
     const [isCartVisible, setIsCartVisible] = useState(false);
+    const [showWelcomeMessage, setShowWelcomeMessage] = useState(false);
 
     useEffect(() => {
         const observer = new IntersectionObserver(
@@ -81,6 +82,10 @@ function App() {
                     localStorage.setItem('tableNumber', tableParam);
                     localStorage.setItem('lastActiveTime', new Date().getTime().toString());
                     window.history.replaceState(null, '', window.location.pathname);
+                    setShowWelcomeMessage(true);
+                    setTimeout(() => {
+                        setShowWelcomeMessage(false);
+                    }, 5000);
                 } catch (error) {
                     console.error("Błąd podczas weryfikacji stolika:", error);
                 }
@@ -427,13 +432,15 @@ function App() {
                     <>
                         <header className="header">
                             <h1>Wirtualny Kelner</h1>
-                            <p style={{color: '#6b7280', fontSize: '0.9rem', marginTop: '0.5rem'}}>
-                                {tableNumber ? `Zeskanowano stolik nr: ${tableNumber}` : 'Brak przypisanego stolika'}
-                            </p>
-
-                            {activeBillId && <p style={{color: '#10b981', fontSize: '0.9rem', marginTop: '0.5rem'}}>
-                                Rachunek otwarty (Stolik {tableNumber})
-                            </p>}
+                            {showWelcomeMessage ? (
+                                <p style={{color: '#10b981', fontSize: '0.9rem', marginTop: '0.5rem'}}>
+                                    Zeskanowano stolik nr: {tableNumber}
+                                </p>
+                            ) : (
+                                <p style={{color: '#6b7280', fontSize: '0.9rem', marginTop: '0.5rem'}}>
+                                    {tableNumber ? `Stolik nr: ${tableNumber}` : 'Brak przypisanego stolika (Zeskanuj kod QR)'}
+                                </p>
+                            )}
                         </header>
 
                         <main className="main-layout">

@@ -4,6 +4,7 @@ import {collection, addDoc, deleteDoc, doc, onSnapshot, updateDoc, query, where,
 import {ref, uploadBytes, getDownloadURL} from "firebase/storage";
 import {db, storage} from "../firebase.js";
 import {QRCodeSVG} from "qrcode.react";
+import {printQRCodesWindow} from "./printQR.js";
 
 export default function Manager() {
     const [activeTab, setActiveTab] = useState('menu');
@@ -30,6 +31,7 @@ export default function Manager() {
     //stany dla kodów qr
     const [qrCodes, setQrCodes] = useState([]);
     const [tableNumInput, setTableNumInput] = useState('');
+    const [selectedQRs, setSelectedQRs] = useState([]);
 
     //stany dla zmiany kodu PIN
     const [newPin, setNewPin] = useState('');
@@ -199,7 +201,7 @@ export default function Manager() {
         } catch (error) {
             console.error("Błąd zmiany widoczności:", error);
         }
-    }
+    };
 
     // usuwanie dania
     const handleDelete = async (id) => {
@@ -222,7 +224,7 @@ export default function Manager() {
         const existingQR = qrCodes.find(qr => qr.tableNumber === num);
 
         if (existingQR) {
-            const confirmOverrite = window.confirm(`Kod do tego stolika (${num}) już istnieje. Czy na pewno chce wygenerować nowy kod?`);
+            const confirmOverrite = window.confirm(`Kod do tego stolika (${num}) już istnieje. Czy na pewno chcesz wygenerować nowy kod?`);
             if (!confirmOverrite) return;
 
             await deleteDoc(doc(db, 'qr_codes', existingQR.id));
@@ -259,10 +261,31 @@ export default function Manager() {
 
             if (window.confirm(`Czy na pewno chcesz usunąć kod QR dla stolika (${tableNum})?`)) {
                 await deleteDoc(doc(db, 'qr_codes', id));
+                setSelectedQRs(prev => prev.filter(qrId => qrId !== id));
             }
         } catch (error) {
             console.error("Błąd podczas usuwania kodu QR:", error);
         }
+    };
+
+    const handleSelectQR = (id) => {
+        setSelectedQRs(prev => prev.includes(id) ? prev.filter(qrId => qrId !== id) : [...prev, id]);
+    };
+
+    // Obsługa drukowania przez osobne okno
+    const handlePrintSelected = () => {
+        const itemsToPrint = qrCodes.filter(qr => selectedQRs.includes(qr.id));
+        if (itemsToPrint.length === 0) {
+            return alert("Najpierw zaznacz kody, które chcesz wydrukować.");
+        }
+        printQRCodesWindow(itemsToPrint);
+    };
+
+    const handleSelectAllAndPrint = () => {
+        if (qrCodes.length === 0) {
+            return alert("Brak kodów w systemie.");
+        }
+        printQRCodesWindow(qrCodes);
     };
 
     //Logika zmiany kodu PIN
@@ -399,7 +422,6 @@ export default function Manager() {
     };
 
     const salesData = getFilteredSalesData();
-
     const displayOrder = ['Przystawki', 'Dania Główne', 'Napoje', 'Desery'];
 
     return (
@@ -407,7 +429,7 @@ export default function Manager() {
             <h2 className="manager-header">Panel Menadżera</h2>
 
             {/* zakładki menadżera */}
-            <div className="manager-tabs no-print">
+            <div className="manager-tabs">
                 <button
                     className={`tab-btn ${activeTab === 'menu' ? 'active' : ''}`}
                     onClick={() => setActiveTab('menu')}
@@ -433,7 +455,7 @@ export default function Manager() {
 
             {/* widok raport sprzedazy*/}
             {activeTab === 'sales' && (
-                <div className="manager-layout no-print" style={{ flexDirection: 'column' }}>
+                <div className="manager-layout" style={{ flexDirection: 'column' }}>
 
                     {/* Filtry Czasowe */}
                     <div className="sales-filters-wrapper">
@@ -519,7 +541,7 @@ export default function Manager() {
 
             {/* widok panelu menu */}
             {activeTab === 'menu' && (
-                <div className="manager-layout no-print">
+                <div className="manager-layout">
                     <div className="manager-form-section">
                         <form className="manager-form" onSubmit={handleSubmit}>
                             <h3>{editingId ? 'Edytuj pozycję' : 'Dodaj danie'}</h3>
@@ -641,7 +663,9 @@ export default function Manager() {
             {/* widok kodów QR */}
             {activeTab === 'qr' && (
                 <div className="manager-qr-section">
-                    <div className="qr-generator-form no-print">
+
+                    {/* formularz*/}
+                    <div className="qr-generator-form">
                         <h3>Wygeneruj nowy kod QR</h3>
                         <form onSubmit={handleGenerateQR} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end' }}>
                             <div className="form-group" style={{ marginBottom: 0, flex: 1 }}>
@@ -657,46 +681,48 @@ export default function Manager() {
                                     required
                                 />
                             </div>
-                            <button type="submit" className="btn-submit" style={{ width: 'auto', padding: '0.75rem 2rem' }}>
+                            <button type="submit" className="btn-submit" style={{ width: 'auto', padding: '0.75rem 2rem', margin: 0 }}>
                                 Wygeneruj Kod
-                            </button>
-                            <button type="button" className="btn-secondary" onClick={() => window.print()}>
-                                Wydrukuj kody
                             </button>
                         </form>
                     </div>
 
+                    {/* lista kodów qr z przypisanym id dla każdego stolika */}
                     <div className="qr-grid">
                         {qrCodes.map(qr => (
-                            <div key={qr.id} className="qr-card">
-                                <div className="qr-card-header no-print">
-                                    <h4>Stolik {qr.tableNumber}</h4>
-                                    <button
-                                        className="btn-delete"
-                                        onClick={() => handleDeleteQR(qr.id, qr.tableNumber)}
-                                        style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem' }}
-                                    >
-                                        Usuń
-                                    </button>
+                            <div key={qr.id} id={`qr-card-${qr.id}`} className="qr-card">
+                                <div className="qr-card-header">
+                                    <label className="qr-checkbox-label">
+                                        <input type="checkbox" checked={selectedQRs.includes(qr.id)} onChange={() => handleSelectQR(qr.id)} />
+                                        <h4>Stolik {qr.tableNumber}</h4>
+                                    </label>
+                                    <button className="btn-delete btn-sm" onClick={() => handleDeleteQR(qr.id, qr.tableNumber)}>Usuń</button>
                                 </div>
                                 <div className="qr-code-wrapper">
-                                    <h2 className="print-only">Stolik {qr.tableNumber}</h2>
                                     <QRCodeSVG value={qr.url} size={160} level="H" includeMargin={true} />
-                                    <span className="qr-url-text no-print">{qr.url}</span>
+                                    <span className="qr-url-text">{qr.url}</span>
                                 </div>
                             </div>
                         ))}
-                        {qrCodes.length === 0 && (
-                            <p style={{ color: '#6b7280', gridColumn: '1 / -1', textAlign: 'center', marginTop: '2rem' }}>
-                                Brak wygenerowanych kodów QR. Wpisz numer u góry, aby zacząć.
-                            </p>
-                        )}
+                        {qrCodes.length === 0 && <p style={{ color: '#6b7280', gridColumn: '1 / -1', textAlign: 'center', marginTop: '2rem' }}>Brak wygenerowanych kodów QR.</p>}
                     </div>
+
+                    {/* drukowanie kodów*/}
+                    {qrCodes.length > 0 && (
+                        <div className="qr-print-actions">
+                            <button type="button" className="btn-submit btn-print" onClick={handlePrintSelected}>
+                                Drukuj zaznaczone
+                            </button>
+                            <button type="button" className="btn-submit btn-print-all" onClick={handleSelectAllAndPrint}>
+                                Drukuj wszystkie
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
 
             {activeTab === 'auth' && (
-                <div className="manager-layout no-print" style={{ justifyContent: 'center', marginTop: '2rem' }}>
+                <div className="manager-layout" style={{ justifyContent: 'center', marginTop: '2rem' }}>
                     <div className="manager-form-section" style={{ maxWidth: '500px', width: '100%' }}>
                         <form className="manager-form" onSubmit={handlePinChange}>
                             <h3 style={{ borderBottom: '2px solid #e5e7eb', paddingBottom: '0.5rem' }}>Autoryzacja Kelnerska</h3>
