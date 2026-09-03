@@ -741,7 +741,6 @@ export default function Manager() {
                                     placeholder="Wpisz 4 cyfry"
                                     value={newPin}
                                     onChange={(e) => setNewPin(e.target.value)}
-                                    style={{ fontSize: '1.5rem', letterSpacing: '0.5rem', textAlign: 'center' }}
                                     required
                                 />
                             </div>
@@ -756,7 +755,6 @@ export default function Manager() {
                                     placeholder="Powtórz 4 cyfry"
                                     value={confirmPin}
                                     onChange={(e) => setConfirmPin(e.target.value)}
-                                    style={{ fontSize: '1.5rem', letterSpacing: '0.5rem', textAlign: 'center' }}
                                     required
                                 />
                             </div>
